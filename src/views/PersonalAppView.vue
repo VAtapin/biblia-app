@@ -4,6 +4,7 @@ import { RouterLink, useRoute } from 'vue-router'
 import { localize } from '@/domain/localization'
 import { useI18n } from '@/i18n/useI18n'
 import { getProfileCredentials } from '@/personal/credentials'
+import { navigationForConfiguration } from '@/personal/configuration'
 import { featureById } from '@/registry/features'
 import type { RemoteProfileData } from '@/services/api/contracts'
 import { bibleDesktopApi } from '@/services/api/bibleDesktopApi'
@@ -16,7 +17,7 @@ const profile = ref<RemoteProfileData | null>(null)
 const loading = ref(true)
 const error = ref<string | null>(null)
 const profileId = computed(() => String(route.params.profileId ?? ''))
-const navigation = computed(() => profile.value?.configuration.navigation.map(featureById).filter(Boolean) ?? [])
+const navigation = computed(() => navigationForConfiguration(profile.value?.configuration).map(featureById).filter(Boolean))
 
 async function load(): Promise<void> {
   const credentials = getProfileCredentials(profileId.value)

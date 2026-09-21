@@ -2,13 +2,15 @@ import { createRouter, createWebHistory } from 'vue-router'
 
 export const router = createRouter({
   history: createWebHistory(),
-  scrollBehavior: () => ({ top: 0 }),
+  scrollBehavior: (to) => to.hash ? { el: to.hash, top: 100 } : { top: 0 },
   routes: [
     { path: '/', name: 'home', component: () => import('@/views/HomeView.vue') },
     { path: '/create', name: 'builder', component: () => import('@/views/BuilderView.vue') },
     { path: '/my/:profileId', name: 'personal', component: () => import('@/views/PersonalAppView.vue') },
     { path: '/scripture', name: 'scripture', component: () => import('@/apps/scripture/ScriptureView.vue') },
-    { path: '/scripture/search', name: 'scripture-search', component: () => import('@/apps/scripture/ScriptureView.vue') },
+    { path: '/scripture/search', name: 'scripture-search', component: () => import('@/apps/scripture/SearchView.vue') },
+    { path: '/scripture/:translation', name: 'scripture-books', component: () => import('@/apps/scripture/BooksView.vue') },
+    { path: '/scripture/:translation/:book/:chapter', name: 'scripture-chapter', component: () => import('@/apps/scripture/ReaderView.vue') },
     { path: '/prayer', name: 'prayer', component: () => import('@/apps/prayer/PrayerView.vue') },
     { path: '/calendar', name: 'calendar', component: () => import('@/apps/calendar/CalendarView.vue') },
     { path: '/calendar/:date', name: 'calendar-date', component: () => import('@/apps/calendar/CalendarView.vue') },

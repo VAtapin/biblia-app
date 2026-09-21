@@ -26,13 +26,16 @@
 - конструктор с зависимостями модулей, быстрым стартом и восстановлением;
 - удалённый профиль без учётной записи, секрет хранится только на устройстве;
 - живые экраны переводов Библии, молитвенной библиотеки, календаря и икон;
+- чтение книг и глав Библии с прямыми ссылками на стихи, поиском, Strong и
+  параллельными местами;
 - переводчик и распознавание надписей через публичный внешний режим API;
 - вопросы веры, рецепты, тесты, туры 360° и полезные материалы;
 - RU/DE-интерфейс, PWA-манифест и безопасное кеширование только публичных GET;
 - Apache/Plesk fallback для прямых SPA-маршрутов.
 
 Foundation не пытается за один шаг воспроизвести все глубокие сценарии Bible
-Desktop. Следующие продуктовые этапы описаны в [плане](docs/PLAN.md).
+Desktop. Например, закладки и офлайн-загрузка целой Библии ещё не реализованы.
+Следующие продуктовые этапы описаны в [плане](docs/PLAN.md).
 
 ## Локальная разработка
 
@@ -73,15 +76,35 @@ docs/              архитектура, API-карта, план и пере�
 
 ## Production на Plesk
 
-Принятая схема: репозиторий находится в
-`/var/www/vhosts/biblia-app.ru/httpdocs`, а document root обоих доменов указывает
-на `/var/www/vhosts/biblia-app.ru/httpdocs/dist`. `biblia-app.de` подключается к
-тому же document root. HTTPS настраивается для обоих доменов.
+Принятая схема: репозиторий находится в `/var/www/vhosts/biblia-app.ru/app`, а
+document root обоих доменов указывает на
+`/var/www/vhosts/biblia-app.ru/app/dist`. `biblia-app.de` подключается к тому же
+document root. HTTPS настраивается для обоих доменов. Существующий `httpdocs`
+Plesk не удаляется и не превращается в Git-репозиторий.
+
+Первый запуск (только если каталога `app` ещё нет):
+
+```bash
+cd /var/www/vhosts/biblia-app.ru && \
+test ! -e app && \
+git clone --branch main --single-branch https://github.com/VAtapin/biblia-app.git app && \
+cd app && \
+export PATH="/opt/plesk/node/22/bin:$PATH" && \
+npm ci && \
+npm run build && \
+test -f dist/index.html && \
+test -f dist/.htaccess
+```
+
+После сборки нужно указать `app/dist` как document root в Plesk для обоих
+доменов и проверить HTTPS, главную страницу и прямой SPA-маршрут. Если `app`
+уже существует, остановитесь и проверьте его содержимое: не перезаписывайте
+действующие файлы.
 
 Обновление уже клонированного проекта:
 
 ```bash
-cd /var/www/vhosts/biblia-app.ru/httpdocs && \
+cd /var/www/vhosts/biblia-app.ru/app && \
 export PATH="/opt/plesk/node/22/bin:$PATH" && \
 git pull --ff-only && \
 npm ci && \

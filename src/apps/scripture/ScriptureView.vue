@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
+import { RouterLink } from 'vue-router'
 import { localize } from '@/domain/localization'
 import { useI18n } from '@/i18n/useI18n'
 import { readyApps } from '@/registry/features'
@@ -39,6 +40,10 @@ onMounted(load)
 <template>
   <div class="page app-page">
     <SectionHeader :title="localize(app.title, locale)" :description="localize(app.description, locale)" icon="book" :eyebrow="t('dataFrom')" />
+    <nav class="scripture-nav" :aria-label="t('scriptureNavigation')">
+      <RouterLink to="/scripture" active-class="active" exact-active-class="active">{{ t('readBible') }}</RouterLink>
+      <RouterLink to="/scripture/search" active-class="active">{{ t('searchBible') }}</RouterLink>
+    </nav>
     <section class="workspace-card">
       <div class="workspace-toolbar">
         <div><h2>{{ t('translations') }}</h2><span v-if="translations.length" class="count-badge">{{ translations.length }}</span></div>
@@ -46,11 +51,12 @@ onMounted(load)
       </div>
       <AsyncNotice :loading="loading" :error="error" :empty="!loading && !error && !filtered.length" @retry="load" />
       <div v-if="!loading && !error" class="translation-grid">
-        <article v-for="translation in filtered" :key="translation.code" class="translation-card">
+        <RouterLink v-for="translation in filtered" :key="translation.code" class="translation-card" :to="`/scripture/${encodeURIComponent(translation.code)}`">
           <span class="language-code">{{ translation.language.code }}</span>
           <div><h3>{{ translation.name }}</h3><p>{{ translation.language.name }}</p></div>
           <span v-if="translation.has_strong" class="capability-badge">Strong</span>
-        </article>
+          <span class="translation-arrow" aria-hidden="true">→</span>
+        </RouterLink>
       </div>
     </section>
   </div>

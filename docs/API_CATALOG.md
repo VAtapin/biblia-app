@@ -12,6 +12,12 @@
 |---|---|---|
 | Главная | `GET /home` | Счётчики готовых приложений и материалов |
 | Библия | `GET /translations` | Каталог переводов и capability Strong |
+| Библия | `GET /translations/{code}/books` | Книги выбранного перевода |
+| Библия | `GET /translations/{code}/books/{book}/chapters/{chapter}` | Текст главы и стихи |
+| Библия | `GET /search/verses` | Поиск по тексту или ссылке |
+| Библия | `GET /verses/{id}/strong-tokens` | Слова Strong выбранного стиха |
+| Библия | `GET /strong/{number}` | Словарная статья Strong |
+| Библия | `GET /verses/{id}/cross-references` | Параллельные места |
 | Календарь | `GET /calendar/day` | Праздники, памяти, пост и чтения на дату |
 | Иконы | `GET /calendar/icons` | Поиск, изображения, даты и общий каталог |
 | Богослужебные тексты | `GET /liturgical/collections` | Каноны, акафисты, Часослов и молитвы |
@@ -29,17 +35,11 @@
 
 ## Следующая глубина готовых приложений
 
-### Писание
+### Дополнительные возможности Писания
 
 - `GET /languages`
 - `GET /canons/{code}/books`
-- `GET /translations/{code}/books`
 - `GET /translations/{code}/supplemental-texts`
-- `GET /translations/{code}/books/{book}/chapters/{chapter}`
-- `GET /search/verses`
-- `GET /strong/{number}`
-- `GET /verses/{verse}/strong-tokens`
-- `GET /verses/{verse}/cross-references`
 - `GET|POST /verses/{verse}/notes`
 
 ### Календарь и богослужение

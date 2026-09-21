@@ -1,5 +1,11 @@
 import { apiRequest } from './client'
 import type {
+  BibleChapter,
+  TranslationBooks,
+  VerseCrossReferences,
+  VerseSearchResponse,
+  VerseStrongTokens,
+  StrongEntry,
   CalendarDay,
   CalendarIconPage,
   HomeSummary,
@@ -40,6 +46,31 @@ export const bibleDesktopApi = {
 
   translations(signal?: AbortSignal): Promise<TranslationSummary[]> {
     return apiRequest('/translations', { signal })
+  },
+
+  translationBooks(translationCode: string, signal?: AbortSignal): Promise<TranslationBooks> {
+    return apiRequest(`/translations/${encodeURIComponent(translationCode)}/books`, { signal })
+  },
+
+  chapter(translationCode: string, bookSlug: string, chapter: number, signal?: AbortSignal): Promise<BibleChapter> {
+    return apiRequest(`/translations/${encodeURIComponent(translationCode)}/books/${encodeURIComponent(bookSlug)}/chapters/${chapter}`, { signal })
+  },
+
+  searchVerses(query: string, translationCode: string, signal?: AbortSignal): Promise<VerseSearchResponse> {
+    const parameters = new URLSearchParams({ q: query, translation: translationCode, limit: '30' })
+    return apiRequest(`/search/verses?${parameters}`, { signal })
+  },
+
+  verseStrongTokens(verseId: number, translationCode: string, signal?: AbortSignal): Promise<VerseStrongTokens> {
+    return apiRequest(`/verses/${verseId}/strong-tokens?translation=${encodeURIComponent(translationCode)}`, { signal })
+  },
+
+  strongEntry(number: string, verseId: number, signal?: AbortSignal): Promise<StrongEntry> {
+    return apiRequest(`/strong/${encodeURIComponent(number)}?verse=${verseId}`, { signal })
+  },
+
+  verseCrossReferences(verseId: number, translationCode: string, signal?: AbortSignal): Promise<VerseCrossReferences> {
+    return apiRequest(`/verses/${verseId}/cross-references?translation=${encodeURIComponent(translationCode)}`, { signal })
   },
 
   liturgicalCollections(signal?: AbortSignal): Promise<LiturgicalCollection[]> {

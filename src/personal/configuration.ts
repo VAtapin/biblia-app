@@ -35,6 +35,12 @@ export function isPersonalConfiguration(value: unknown): value is PersonalConfig
     && typeof value.updatedAt === 'string'
 }
 
+export function navigationForConfiguration(value: unknown): string[] {
+  if (!isRecord(value)) return []
+  const navigation = isStringArray(value.navigation) && value.navigation.length ? value.navigation : value.sections
+  return isStringArray(navigation) ? navigation : []
+}
+
 function isStringArray(value: unknown): value is string[] {
   return Array.isArray(value) && value.every((item) => typeof item === 'string')
 }

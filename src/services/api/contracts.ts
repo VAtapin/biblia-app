@@ -32,6 +32,100 @@ export interface TranslationSummary {
   is_default: boolean
 }
 
+export interface BibleBook {
+  slug: string
+  name: string
+  short_name: string | null
+  order: number
+  chapters_count: number
+  canonical_book: { osis_code: string; testament: 'old' | 'new'; is_deuterocanonical: boolean } | null
+}
+
+export interface TranslationBooks {
+  translation: Pick<TranslationSummary, 'code' | 'name' | 'short_name' | 'language'>
+  books: BibleBook[]
+}
+
+export interface StrongToken {
+  id: number
+  strong_number: string
+  token_order: number
+  surface_text: string | null
+  grammar_code: string | null
+  entry: { word: string | null; transliteration: string | null }
+}
+
+export interface BibleVerse {
+  id: number
+  number: number
+  osis_ref: string
+  text: string
+  plain_text: string
+  has_strong_markup: boolean
+  strong_tokens: StrongToken[]
+}
+
+export interface BibleChapter {
+  translation: Pick<TranslationSummary, 'code' | 'name' | 'short_name' | 'language'>
+  book: Pick<BibleBook, 'slug' | 'name' | 'short_name' | 'chapters_count'>
+  chapter: { number: number; verses_count: number }
+  verses: BibleVerse[]
+}
+
+export interface VerseSearchResult {
+  verse_id: number
+  osis_ref: string
+  reference: string
+  translation: { code: string; short_name: string | null }
+  book: { slug: string; osis_code: string; name: string; short_name: string | null }
+  chapter_number: number
+  verse_number: number
+  snippet: string
+  snippet_segments: Array<{ text: string; match: boolean }>
+}
+
+export interface VerseSearchResponse {
+  query: string
+  mode: 'text' | 'reference'
+  translation_code: string | null
+  results: VerseSearchResult[]
+}
+
+export interface StrongEntry {
+  id: number
+  number: string
+  word: string | null
+  transliteration: string | null
+  pronunciation: string | null
+  content: string | null
+  lexicon: { code: string; name: string; language: string }
+}
+
+export interface VerseStrongTokens {
+  verse: { id: number; osis_ref: string }
+  tokens: StrongToken[]
+}
+
+export interface VerseCrossReference {
+  id: number
+  type: string | null
+  source: string | null
+  target: {
+    verse_id: number
+    osis_ref: string
+    reference: string
+    chapter_number: number
+    verse_number: number
+    text: string | null
+  }
+}
+
+export interface VerseCrossReferences {
+  verse: { id: number; osis_ref: string }
+  translation_code: string
+  references: VerseCrossReference[]
+}
+
 export interface LiturgicalCollection {
   id: string
   title: string
