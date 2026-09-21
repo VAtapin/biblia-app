@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, nextTick, onUnmounted, ref, watch } from 'vue'
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import { RouterLink, useRoute, useRouter } from 'vue-router'
 import { useI18n } from '@/i18n/useI18n'
 import type { BibleChapter, BibleVerse, StrongEntry, TranslationBooks, VerseCrossReference, VerseStrongTokens, VerseCrossReferences } from '@/services/api/contracts'
@@ -27,6 +27,10 @@ const entryLoading = ref(false)
 const entryError = ref(false)
 const showAllReferences = ref(false)
 const fontSize = ref(readFontSize())
+const compactViewport = window.matchMedia('(max-width: 980px)')
+const compactReader = ref(compactViewport.matches)
+const studyOpen = ref(false)
+const studyPanel = ref<HTMLElement | null>(null)
 let request: AbortController | null = null
 let studyRequest: AbortController | null = null
 let entryRequest: AbortController | null = null
@@ -56,6 +60,38 @@ function scrollToVerse(verse: BibleVerse): void {
   void nextTick(() => document.getElementById(`v${verse.number}`)?.scrollIntoView({ block: 'center' }))
 }
 
+function syncCompactReader(): void {
+  compactReader.value = compactViewport.matches
+}
+
+function closeStudy(): void {
+  studyOpen.value = false
+  if (compactReader.value && selectedVerse.value) {
+    const number = selectedVerse.value.number
+    void nextTick(() => document.querySelector<HTMLElement>(`#v${number} .verse-number`)?.focus({ preventScroll: true }))
+  }
+}
+
+function handleStudyKeydown(event: KeyboardEvent): void {
+  if (!compactReader.value || !studyOpen.value) return
+  if (event.key === 'Escape') {
+    event.preventDefault()
+    closeStudy()
+  } else if (event.key === 'Tab') {
+    const focusable = Array.from(studyPanel.value?.querySelectorAll<HTMLElement>('button:not(:disabled), a[href]') ?? [])
+    if (!focusable.length) return
+    const first = focusable[0]!
+    const last = focusable[focusable.length - 1]!
+    if (event.shiftKey && (document.activeElement === first || document.activeElement === studyPanel.value)) {
+      event.preventDefault()
+      last.focus()
+    } else if (!event.shiftKey && document.activeElement === last) {
+      event.preventDefault()
+      first.focus()
+    }
+  }
+}
+
 async function load(): Promise<void> {
   request?.abort()
   studyRequest?.abort()
@@ -66,6 +102,7 @@ async function load(): Promise<void> {
   error.value = null
   chapter.value = null
   selectedVerse.value = null
+  studyOpen.value = false
   catalog.value = null
   try {
     const books = await bibleDesktopApi.translationBooks(translationCode.value, signal)
@@ -103,8 +140,8 @@ function selectBook(event: Event): void {
 }
 
 function selectVerse(verse: BibleVerse): void {
-  if (route.hash === `#v${verse.number}`) void openVerse(verse)
-  else void router.replace({ hash: `#v${verse.number}` })
+  void openVerse(verse)
+  if (route.hash !== `#v${verse.number}`) void router.replace({ hash: `#v${verse.number}` })
 }
 
 async function openVerse(verse: BibleVerse): Promise<void> {
@@ -113,6 +150,7 @@ async function openVerse(verse: BibleVerse): Promise<void> {
   studyRequest = new AbortController()
   const signal = studyRequest.signal
   selectedVerse.value = verse
+  studyOpen.value = true
   tokens.value = null
   references.value = null
   entry.value = null
@@ -160,15 +198,30 @@ function referencePath(reference: VerseCrossReference): string | null {
   return targetBook ? chapterPath(translationCode.value, targetBook.slug, reference.target.chapter_number, reference.target.verse_number) : null
 }
 
-watch(() => [route.params.translation, route.params.book, route.params.chapter], load, { immediate: true })
+watch([translationCode, bookSlug, chapterNumber], load, { immediate: true })
 watch(() => route.hash, () => {
   const verse = verseFromHash()
-  if (verse) {
+  if (verse && selectedVerse.value?.id !== verse.id) {
     scrollToVerse(verse)
     void openVerse(verse)
-  } else selectedVerse.value = null
+  } else if (!verse) {
+    selectedVerse.value = null
+    studyOpen.value = false
+  }
 })
-onUnmounted(() => { request?.abort(); studyRequest?.abort(); entryRequest?.abort() })
+watch([studyOpen, compactReader], async ([open, compact]) => {
+  document.body.classList.toggle('reader-modal-open', open && compact)
+  if (open && compact) {
+    await nextTick()
+    studyPanel.value?.focus({ preventScroll: true })
+  }
+})
+onMounted(() => compactViewport.addEventListener('change', syncCompactReader))
+onUnmounted(() => {
+  request?.abort(); studyRequest?.abort(); entryRequest?.abort()
+  compactViewport.removeEventListener('change', syncCompactReader)
+  document.body.classList.remove('reader-modal-open')
+})
 </script>
 
 <template>
@@ -193,11 +246,13 @@ onUnmounted(() => { request?.abort(); studyRequest?.abort(); entryRequest?.abort
         <article class="reader-text workspace-card" :lang="chapter.translation.language.code" :style="{ '--reader-font-size': `${fontSize}px` }">
           <p class="reader-instruction">{{ t('verseStudyHint') }}</p>
           <div v-for="verse in chapter.verses" :id="`v${verse.number}`" :key="verse.id" class="reader-verse" :class="{ active: selectedVerse?.id === verse.id }">
-            <button type="button" class="verse-number" :aria-label="`${t('verse')} ${verse.number}`" @click="selectVerse(verse)">{{ verse.number }}</button>
+            <button type="button" class="verse-number" :aria-label="`${t('verse')} ${verse.number}`" :aria-expanded="selectedVerse?.id === verse.id && studyOpen" aria-controls="reader-study-panel" @click="selectVerse(verse)">{{ verse.number }}</button>
             <p>{{ verse.plain_text }}</p>
           </div>
         </article>
-        <aside class="reader-study mini-panel">
+        <div v-if="selectedVerse && studyOpen" class="reader-study-backdrop" aria-hidden="true" @click="closeStudy"></div>
+        <aside id="reader-study-panel" ref="studyPanel" class="reader-study mini-panel" :class="{ 'is-open': studyOpen }" :role="compactReader && studyOpen ? 'dialog' : undefined" :aria-modal="compactReader && studyOpen ? 'true' : undefined" :aria-label="compactReader && studyOpen ? t('verseStudy') : undefined" tabindex="-1" @keydown="handleStudyKeydown">
+          <button type="button" class="reader-study-close" :aria-label="t('close')" @click="closeStudy">×</button>
           <template v-if="selectedVerse">
             <h2>{{ t('verse') }} {{ selectedVerse.number }}</h2>
             <p class="reader-study-reference">{{ selectedVerse.osis_ref }}</p>

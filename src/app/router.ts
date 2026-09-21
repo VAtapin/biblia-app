@@ -1,8 +1,9 @@
 import { createRouter, createWebHistory } from 'vue-router'
+import { scrollBehavior } from './scrollBehavior'
 
 export const router = createRouter({
   history: createWebHistory(),
-  scrollBehavior: (to) => to.hash ? { el: to.hash, top: 100 } : { top: 0 },
+  scrollBehavior,
   routes: [
     { path: '/', name: 'home', component: () => import('@/views/HomeView.vue') },
     { path: '/create', name: 'builder', component: () => import('@/views/BuilderView.vue') },
