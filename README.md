@@ -76,42 +76,35 @@ docs/              архитектура, API-карта, план и пере�
 
 ## Production на Plesk
 
-Принятая схема: репозиторий находится в `/var/www/vhosts/biblia-app.ru/app`, а
-document root обоих доменов указывает на
-`/var/www/vhosts/biblia-app.ru/app/dist`. `biblia-app.de` подключается к тому же
-document root. HTTPS настраивается для обоих доменов. Существующий `httpdocs`
-Plesk не удаляется и не превращается в Git-репозиторий.
+Выбранный владельцем каталог публикации —
+`/var/www/vhosts/biblia-app.ru/httpdocs/dist`. Репозиторий собирается во
+временном каталоге; постоянный checkout `app` не нужен. Document root и HTTPS
+для `biblia-app.ru` и `biblia-app.de` настраиваются в Plesk отдельно: команда
+ниже не изменяет настройки доменов и не удаляет другие файлы в `httpdocs`.
 
-Первый запуск (только если каталога `app` ещё нет):
-
-```bash
-cd /var/www/vhosts/biblia-app.ru && \
-test ! -e app && \
-git clone --branch main --single-branch https://github.com/VAtapin/biblia-app.git app && \
-cd app && \
-export PATH="/opt/plesk/node/22/bin:$PATH" && \
-npm ci && \
-npm run build && \
-test -f dist/index.html && \
-test -f dist/.htaccess
-```
-
-После сборки нужно указать `app/dist` как document root в Plesk для обоих
-доменов и проверить HTTPS, главную страницу и прямой SPA-маршрут. Если `app`
-уже существует, остановитесь и проверьте его содержимое: не перезаписывайте
-действующие файлы.
-
-Обновление уже клонированного проекта:
+Публикация текущей ветки `main`:
 
 ```bash
-cd /var/www/vhosts/biblia-app.ru/app && \
-export PATH="/opt/plesk/node/22/bin:$PATH" && \
-git pull --ff-only && \
-npm ci && \
-npm run build && \
-test -f dist/index.html && \
+set -e
+export PATH="/opt/plesk/node/22/bin:$PATH"
+deploy_tmp=$(mktemp -d)
+git clone --depth 1 --branch main https://github.com/VAtapin/biblia-app.git "$deploy_tmp/source"
+cd "$deploy_tmp/source"
+npm ci
+npm run build
+test -f dist/index.html
+test -f dist/sw.js
 test -f dist/.htaccess
+mkdir -p /var/www/vhosts/biblia-app.ru/httpdocs/dist
+cp -a dist/. /var/www/vhosts/biblia-app.ru/httpdocs/dist/
 ```
+
+После публикации проверить, что Document Root обоих доменов действительно
+указывает на `httpdocs/dist`, затем открыть главную и прямой SPA-маршрут.
+Для обновления браузерного PWA-кеша использовать жёсткую перезагрузку страницы;
+серверная сборка не удаляет пользовательские данные браузера. Удалять ранее
+созданный `app` можно только после проверки, что Plesk его не использует и там
+нет пользовательских файлов.
 
 PHP, Composer и миграции для этого frontend-репозитория не нужны. Изменения API
 разворачиваются отдельно из репозитория Bible Desktop.
